@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Texas Hold'em Poker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            background-color: #111;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-image: linear-gradient(45deg, #0a0a0a 25%, transparent 25%),
+                              linear-gradient(-45deg, #0a0a0a 25%, transparent 25%),
+                              linear-gradient(45deg, transparent 75%, #0a0a0a 75%),
+                              linear-gradient(-45deg, transparent 75%, #0a0a0a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        #poker-table {
+            position: relative;
+            width: 800px;
+            height: 500px;
+            background-color: #076324;
+            border-radius: 200px;
+            margin-top: 120px;
+            margin-bottom: 50px;
+            padding: 20px;
+            box-shadow: 
+                /* Outer glow */
+                0 0 10px 5px rgba(50, 220, 100, 0.3),
+                /* Inner darker border */
+                inset 0 0 8px 8px rgba(0, 0, 0, 0.5),
+                /* Inner highlight */
+                inset 0 -20px 20px rgba(255, 255, 255, 0.1),
+                /* Outer pixel border */
+                0 0 0 8px #043b14;
+            image-rendering: pixelated;
+            transform: perspective(800px) rotateX(10deg);
+            transform-style: preserve-3d;
+            background-image: 
+                linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px),
+                linear-gradient(0deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+
+        .player-area {
+            position: absolute;
+            width: 150px;
+            text-align: center;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 4px;
+            border: 4px solid #222;
+            box-shadow: 0 4px 0 #111;
+            transition: border-color 0.3s;
+            transform-style: preserve-3d;
+            transform: translateZ(5px);
+            image-rendering: pixelated;
+            color: white;
+        }
+
+        #player-0 { bottom: 20px; left: 50%; transform: translateX(-50%) translateZ(5px); }
+        #player-1 { bottom: 50%; left: 20px; transform: translateY(50%) translateZ(5px); }
+        #player-2 { top: 20px; left: 50%; transform: translateX(-50%) translateZ(5px); }
+        #player-3 { bottom: 50%; right: 20px; transform: translateY(50%) translateZ(5px); }
+
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 0 #000;
+            color: white;
+        }
+
+        .player-chips {
+            color: #ffd700;
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .player-bet {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        .player-cards {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .card {
+            width: 25px;
+            height: 30px;
+            padding: 5px;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 4px 0 #999, 0 0 0 4px #fff, 0 0 0 5px #222;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            image-rendering: pixelated;
+            transform-style: preserve-3d;
+            transform: translateZ(2px);
+        }
+
+        .card-back {
+            background-color: #2980b9;
+            color: transparent; /* Hide the question mark */
+            box-shadow: 0 4px 0 #1a5276, 0 0 0 4px #2980b9, 0 0 0 5px #222;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Style variants */
+        .card-back.style-blue-diamond {
+            background-color: #2980b9;
+            box-shadow: 0 4px 0 #1a5276, 0 0 0 4px #2980b9, 0 0 0 5px #222;
+        }
+        
+        .card-back.style-blue-diamond::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(45deg, transparent 25%, #3498db 25%, #3498db 50%, transparent 50%),
+                linear-gradient(-45deg, transparent 25%, #3498db 25%, #3498db 50%, transparent 50%);
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px;
+            image-rendering: pixelated;
+        }
+        
+        .card-back.style-red-diagonal {
+            background-color: #c0392b;
+            box-shadow: 0 4px 0 #7d2419, 0 0 0 4px #c0392b, 0 0 0 5px #222;
+        }
+        
+        .card-back.style-red-diagonal::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(45deg, transparent 25%, #e74c3c 25%, #e74c3c 50%, transparent 50%),
+                linear-gradient(-45deg, transparent 25%, #e74c3c 25%, #e74c3c 50%, transparent 50%);
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px;
+            image-rendering: pixelated;
+        }
+        
+        .card-back.style-green-circuit {
+            background-color: #27ae60;
+            box-shadow: 0 4px 0 #166e3a, 0 0 0 4px #27ae60, 0 0 0 5px #222;
+        }
+        
+        .card-back.style-green-circuit::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(90deg, transparent 50%, rgba(0,0,0,0.2) 50%),
+                linear-gradient(0deg, transparent 50%, rgba(0,0,0,0.2) 50%);
+            background-size: 4px 4px;
+            image-rendering: pixelated;
+        }
+        
+        .card-back.style-gold-deluxe {
+            background-color: #f39c12;
+            box-shadow: 0 4px 0 #b3730c, 0 0 0 4px #f39c12, 0 0 0 5px #222;
+        }
+        
+        .card-back.style-gold-deluxe::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(#f1c40f 15%, transparent 16%),
+                radial-gradient(#f1c40f 15%, transparent 16%);
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 4px;
+            image-rendering: pixelated;
+        }
+
+        #community-cards {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) translateZ(5px);
+            display: flex;
+            gap: 20px;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 4px;
+            border: 4px solid #222;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        #pot-display {
+            position: absolute;
+            top: 35%;
+            left: 50%;
+            transform: translateX(-50%) translateZ(10px);
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 3px 3px 0 #000;
+        }
+
+        .action-buttons {
+            position: absolute;
+            bottom: 180px;
+            left: 50%;
+            transform: translateX(-50%) translateZ(5px);
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            transition: background-color 0.3s;
+            box-shadow: 0 6px 0 #1a5276, 0 0 0 4px #3498db, 0 0 0 5px #222;
+            text-shadow: 2px 2px 0 #000;
+            image-rendering: pixelated;
+            font-family: 'Press Start 2P', 'Courier New', monospace;
+            letter-spacing: -1px;
+            transform: translateY(-2px);
+        }
+
+        button:hover:not(:disabled) {
+            background-color: #2980b9;
+            transform: translateY(0);
+            box-shadow: 0 4px 0 #1a5276, 0 0 0 4px #2980b9, 0 0 0 5px #222;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #1a5276, 0 0 0 4px #2980b9, 0 0 0 5px #222;
+        }
+
+        #game-state {
+            position: absolute;
+            top: -40px;
+            left: 20px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 0 #000;
+            padding: 5px 10px;
+            background-color: #222;
+            border: 4px solid #555;
+            box-shadow: 0 4px 0 #000;
+            image-rendering: pixelated;
+        }
+        
+        #feedback {
+            position: absolute;
+            top: 560px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 0 #000;
+            padding: 10px;
+            z-index: 20;
+        }
+
+        .proceed-button {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%) translateZ(5px);
+            z-index: 10;
+            background-color: #e74c3c;
+            box-shadow: 0 6px 0 #a93226, 0 0 0 4px #e74c3c, 0 0 0 5px #222;
+        }
+        
+        .proceed-button:hover {
+            background-color: #c0392b;
+            box-shadow: 0 4px 0 #a93226, 0 0 0 4px #c0392b, 0 0 0 5px #222;
+        }
+
+        .winner-display {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-10%);
+            background-color: #111;
+            padding: 15px 30px;
+            border-radius: 0;
+            border: 4px solid gold;
+            color: gold;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: 2px 2px 0 #000;
+            box-shadow: 0 6px 0 #000;
+            image-rendering: pixelated;
+            width: auto;
+            min-width: 300px;
+            white-space: normal;
+            z-index: 50;
+        }
+        
+        /* Add store panel styles */
+        #store-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 200px;
+            background-color: #222;
+            border: 4px solid #555;
+            box-shadow: 0 4px 0 #000;
+            padding: 15px;
+            color: white;
+            text-align: center;
+            image-rendering: pixelated;
+            z-index: 100;
+        }
+        
+        #store-title {
+            font-size: 16px;
+            color: #ffd700;
+            text-shadow: 2px 2px 0 #000;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #555;
+        }
+        
+        .card-style {
+            margin-bottom: 20px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s;
+        }
+        
+        .card-style:hover {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+        
+        .card-style.selected {
+            opacity: 1;
+            outline: 2px solid #ffd700;
+        }
+        
+        .card-style-preview {
+            width: 40px;
+            height: 50px;
+            margin: 0 auto;
+            border-radius: 4px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card-style-name {
+            font-size: 10px;
+            margin: 5px 0;
+        }
+        
+        .card-style-price {
+            font-size: 10px;
+            color: #ffd700;
+        }
+        
+        .style-blue-diamond .card-style-preview {
+            background-color: #2980b9;
+            background-image: 
+                linear-gradient(45deg, transparent 25%, #3498db 25%, #3498db 50%, transparent 50%),
+                linear-gradient(-45deg, transparent 25%, #3498db 25%, #3498db 50%, transparent 50%);
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px;
+        }
+        
+        .style-red-diagonal .card-style-preview {
+            background-color: #c0392b;
+            background-image: 
+                linear-gradient(45deg, transparent 25%, #e74c3c 25%, #e74c3c 50%, transparent 50%),
+                linear-gradient(-45deg, transparent 25%, #e74c3c 25%, #e74c3c 50%, transparent 50%);
+            background-size: 10px 10px;
+            background-position: 0 0, 5px 5px;
+        }
+        
+        .style-green-circuit .card-style-preview {
+            background-color: #27ae60;
+            background-image: 
+                linear-gradient(90deg, transparent 50%, rgba(0,0,0,0.2) 50%),
+                linear-gradient(0deg, transparent 50%, rgba(0,0,0,0.2) 50%);
+            background-size: 4px 4px;
+        }
+        
+        .style-gold-deluxe .card-style-preview {
+            background-color: #f39c12;
+            background-image: radial-gradient(#f1c40f 15%, transparent 16%),
+                radial-gradient(#f1c40f 15%, transparent 16%);
+            background-size: 8px 8px;
+            background-position: 0 0, 4px 4px;
+        }
+
+        /* Mobile Responsive Styles */
+        @media screen and (max-width: 768px) {
+            body {
+                padding: 0;
+                margin: 0;
+                height: 100vh;
+                width: 100vw;
+                overflow: hidden;
+            }
+            
+            #poker-table {
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                border-radius: 0;
+                transform: none;
+                box-shadow: none;
+            }
+            
+            .player-area {
+                width: 120px;
+                padding: 5px;
+                font-size: 10px;
+            }
+            
+            #player-0 { bottom: 10px; left: 50%; transform: translateX(-50%); }
+            #player-1 { bottom: 45%; left: 5px; transform: translateY(50%); }
+            #player-2 { top: 10px; left: 50%; transform: translateX(-50%); }
+            #player-3 { bottom: 45%; right: 5px; transform: translateY(50%); }
+            
+            .player-name, .player-chips, .player-bet {
+                font-size: 9px;
+                margin-bottom: 3px;
+            }
+            
+            .card {
+                width: 30px;
+                height: 40px;
+                font-size: 12px;
+            }
+            
+            #community-cards {
+                gap: 5px;
+                padding: 8px;
+            }
+            
+            .action-buttons {
+                bottom: 80px;
+                gap: 5px;
+            }
+            
+            button {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .proceed-button {
+                bottom: 110px;
+                right: 20px;
+                left: auto;
+                transform: none;
+                width: 120px;
+                padding: 8px 0;
+                font-size: 12px;
+            }
+            
+            #store-panel {
+                position: absolute;
+                right: 5px;
+                top: auto;
+                bottom: 50%;
+                transform: none;
+                width: 100px;
+                padding: 5px;
+                font-size: 8px;
+                z-index: 100;
+            }
+            
+            #store-title {
+                font-size: 10px;
+                margin-bottom: 8px;
+                padding-bottom: 5px;
+            }
+            
+            .card-style {
+                margin-bottom: 10px;
+            }
+            
+            .card-style-preview {
+                width: 25px;
+                height: 35px;
+            }
+            
+            .card-style-name, .card-style-price {
+                font-size: 7px;
+            }
+            
+            .winner-display {
+                top: 5px;
+                padding: 8px 15px;
+                font-size: 14px;
+                min-width: 200px;
+                max-width: 90vw;
+                white-space: normal;
+            }
+            
+            #game-state {
+                font-size: 10px;
+                top: 5px;
+                left: 5px;
+            }
+            
+            #feedback {
+                font-size: 26px;
+                bottom: -8px;
+            }
+            
+            /* Next Hand button mobile styling */
+            button#next-hand-button {
+                top: 5px;
+                right: 5px;
+                font-size: 8px;
+                padding: 4px 8px;
+            }
+            
+            /* Portrait orientation adjustments */
+            @media (orientation: portrait) {
+                #player-0 { bottom: 90px; }
+                .action-buttons { bottom: 20px; }
+                #community-cards { 
+                    top: 45%; 
+                    transform: translate(-50%, -50%) scale(0.9);
+                }
+                .proceed-button {
+                    bottom: 160px;
+                    right: 10px;
+                }
+            }
+            
+            /* Landscape orientation adjustments */
+            @media (orientation: landscape) {
+                .player-area {
+                    width: 100px;
+                }
+                #player-0 { bottom: 5px; }
+                #player-2 { top: 5px; }
+                .action-buttons { bottom: 50px; }
+            }
+        }
+
+        /* Loading Screen Styles */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #111;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-content {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .loading-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 24px;
+            color: #ffd700;
+            margin-bottom: 30px;
+            text-shadow: 3px 3px 0 #000;
+        }
+        
+        .loading-spinner {
+            margin: 20px auto;
+            width: 80px;
+            height: 80px;
+            position: relative;
+        }
+        
+        .card-spinner {
+            width: 50px;
+            height: 70px;
+            background-color: #2980b9;
+            border-radius: 5px;
+            box-shadow: 0 4px 0 #1a5276, 0 0 0 4px #2980b9, 0 0 0 5px #222;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: spin 2s infinite ease;
+        }
+        
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .loading-message {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 14px;
+            color: white;
+            margin: 20px 0;
+        }
+        
+        #start-game-btn {
+            font-family: 'Press Start 2P', monospace;
+            background-color: #27ae60;
+            border: none;
+            border-radius: 0;
+            color: white;
+            padding: 15px 30px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #145a32, 0 0 0 4px #27ae60, 0 0 0 5px #222;
+            transition: all 0.2s ease;
+        }
+        
+        #start-game-btn:hover {
+            transform: translateY(2px);
+            box-shadow: 0 4px 0 #145a32, 0 0 0 4px #27ae60, 0 0 0 5px #222;
+        }
+        
+        #start-game-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #145a32, 0 0 0 4px #27ae60, 0 0 0 5px #222;
+        }
+        
+        @media screen and (max-width: 768px) {
+            .loading-title {
+                font-size: 18px;
+            }
+            
+            .loading-message {
+                font-size: 10px;
+            }
+            
+            #start-game-btn {
+                font-size: 12px;
+                padding: 10px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="poker-table"></div>
+    
+    <!-- Store Panel -->
+    <div id="store-panel">
+        <div id="store-title">CARD SHOP</div>
+        
+        <div class="card-style style-blue-diamond selected" data-style="blue-diamond" data-price="0">
+            <div class="card-style-preview"></div>
+            <div class="card-style-name">BLUE DIAMOND</div>
+            <div class="card-style-price">FREE</div>
+        </div>
+        
+        <div class="card-style style-red-diagonal" data-style="red-diagonal" data-price="500">
+            <div class="card-style-preview"></div>
+            <div class="card-style-name">RED DIAGONAL</div>
+            <div class="card-style-price">$500</div>
+        </div>
+        
+        <div class="card-style style-green-circuit" data-style="green-circuit" data-price="1000">
+            <div class="card-style-preview"></div>
+            <div class="card-style-name">GREEN CIRCUIT</div>
+            <div class="card-style-price">$1000</div>
+        </div>
+        
+        <div class="card-style style-gold-deluxe" data-style="gold-deluxe" data-price="3000">
+            <div class="card-style-preview"></div>
+            <div class="card-style-name">YUTING DELUXE</div>
+            <div class="card-style-price">$3000</div>
+        </div>
+    </div>
+    
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-title">TEXAS HOLD'EM</div>
+            <div class="loading-spinner">
+                <div class="card-spinner"></div>
+            </div>
+            <div class="loading-message">DEALING CARDS...</div>
+            <button id="start-game-btn">TAP TO START</button>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { Game } from './src/game.js';
+        import { initializeUI } from './src/ui.js';
+
+        // Initialize the game
+        document.addEventListener('DOMContentLoaded', () => {
+            // Show loading screen first
+            const loadingScreen = document.getElementById('loading-screen');
+            const startGameBtn = document.getElementById('start-game-btn');
+            
+            // Check if we should show mobile-specific instructions
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                || window.innerWidth <= 768) {
+                document.body.classList.add('mobile-device');
+                
+                // Add orientation message
+                if (window.innerHeight > window.innerWidth) {
+                    document.body.classList.add('portrait');
+                } else {
+                    document.body.classList.add('landscape');
+                }
+                
+                // Listen for orientation changes
+                window.addEventListener('resize', function() {
+                    if (window.innerHeight > window.innerWidth) {
+                        document.body.classList.add('portrait');
+                        document.body.classList.remove('landscape');
+                    } else {
+                        document.body.classList.add('landscape');
+                        document.body.classList.remove('portrait');
+                    }
+                });
+            }
+            
+            // Start game when button is clicked
+            startGameBtn.addEventListener('click', function() {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    
+                    // Initialize game
+                    const game = new Game();
+                    
+                    // Add players - first player (You) is human
+                    const humanPlayer = game.addPlayer('You', 1000, true);
+                    game.addPlayer('AI 1', 1000);
+                    game.addPlayer('AI 2', 1000);
+                    game.addPlayer('AI 3', 1000);
+                    
+                    console.log("Created human player:", humanPlayer);
+                    console.log("Human player index:", game.humanPlayerIndex);
+                    
+                    // Start the first hand
+                    game.startNewHand();
+                    
+                    // Initialize the UI
+                    initializeUI(game);
+                    
+                    // Delay before running AI actions to ensure UI is fully initialized
+                    setTimeout(() => {
+                        // Check if the first player is an AI (not the human)
+                        if (game.currentPlayerIndex !== game.humanPlayerIndex) {
+                            console.log("Starting AI actions for initial hand...");
+                            // Import function directly to avoid scope issues
+                            import('./src/ui.js').then(module => {
+                                module.runAIPlayersIfNeeded(game);
+                            });
+                        } else {
+                            console.log("Human player is first to act in initial hand");
+                        }
+                    }, 1000);
+                }, 500);
+            });
+        });
+    </script>
+</body>
+</html> 

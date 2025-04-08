@@ -1,0 +1,1 @@
+// This file is now empty since we're using inline scripts in index.html 
